@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, abort
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from models import db, Employee
 import os
 
@@ -7,7 +7,7 @@ app = Flask(__name__)
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 db_path = os.path.join(BASE_DIR, "employees.db")
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 
 db.init_app(app)
 
@@ -56,34 +56,45 @@ def delete(id):
     db.session.commit()
     return redirect(url_for("index"))
 
-# ------------------- API -------------------
+# ------------------- API (OpenAPI person-service.yaml) -------------------
 
-@app.route("/persons", methods=["GET"])
-def get_all_persons():
+@app.route("/api/v1/persons", methods=["GET"])
+def list_persons():
     persons = Employee.query.all()
     return jsonify([
-        {"id": p.id, "name": p.name, "address": p.address, "work": p.work, "age": p.age}
-        for p in persons
-    ])
+        {
+            "id": p.id,
+            "name": p.name,
+            "address": p.address,
+            "work": p.work,
+            "age": p.age
+        } for p in persons
+    ]), 200
 
-@app.route("/persons/<int:personId>", methods=["GET"])
-def get_person(personId):
-    person = Employee.query.get(personId)
+
+@app.route("/api/v1/persons/<int:id>", methods=["GET"])
+def get_person(id):
+    person = Employee.query.get(id)
     if not person:
-        abort(404, description="Person not found")
+        return jsonify({"message": f"Person with id={id} not found"}), 404
+
     return jsonify({
         "id": person.id,
         "name": person.name,
         "address": person.address,
         "work": person.work,
         "age": person.age
-    })
+    }), 200
 
-@app.route("/persons", methods=["POST"])
+
+@app.route("/api/v1/persons", methods=["POST"])
 def create_person():
     data = request.get_json()
     if not data or "name" not in data:
-        abort(400, description="Name is required")
+        return jsonify({
+            "message": "Validation error",
+            "errors": {"name": "Name is required"}
+        }), 400
 
     new_person = Employee(
         name=data["name"],
@@ -94,17 +105,31 @@ def create_person():
     db.session.add(new_person)
     db.session.commit()
 
-    return jsonify({"id": new_person.id}), 201
+    location_url = url_for("get_person", id=new_person.id, _external=True)
+    response = jsonify({
+        # "id": new_person.id,
+        # "name": new_person.name,
+        # "address": new_person.address,
+        # "work": new_person.work,
+        # "age": new_person.age
+    })
+    response.status_code = 201
+    response.headers["Location"] = location_url
+    return response
 
-@app.route("/persons/<int:personId>", methods=["PATCH"])
-def update_person(personId):
-    person = Employee.query.get(personId)
+
+@app.route("/api/v1/persons/<int:id>", methods=["PATCH"])
+def update_person(id):
+    person = Employee.query.get(id)
     if not person:
-        abort(404, description="Person not found")
+        return jsonify({"message": f"Person with id={id} not found"}), 404
 
     data = request.get_json()
     if not data:
-        abort(400, description="No data provided")
+        return jsonify({
+            "message": "Validation error",
+            "errors": {"body": "No data provided"}
+        }), 400
 
     if "name" in data:
         person.name = data["name"]
@@ -116,32 +141,50 @@ def update_person(personId):
         person.age = data["age"]
 
     db.session.commit()
-    return jsonify({"message": "Updated successfully"})
 
-@app.route("/persons/<int:personId>", methods=["DELETE"])
-def delete_person(personId):
-    person = Employee.query.get(personId)
+    return jsonify({
+        "id": person.id,
+        "name": person.name,
+        "address": person.address,
+        "work": person.work,
+        "age": person.age
+    }), 200
+
+
+@app.route("/api/v1/persons/<int:id>", methods=["DELETE"])
+def delete_person(id):
+    person = Employee.query.get(id)
     if not person:
-        abort(404, description="Person not found")
+        return jsonify({"message": f"Person with id={id} not found"}), 404
 
     db.session.delete(person)
     db.session.commit()
-    return jsonify({"message": "Deleted successfully"})
+    return "", 204
+
+
+# ------------------- ERROR HANDLERS -------------------
 
 @app.errorhandler(400)
 def bad_request(error):
-    return jsonify({"error": "Bad Request", "message": error.description}), 400
+    return jsonify({
+        "message": "Bad Request",
+        "errors": {"error": error.description if hasattr(error, "description") else "Invalid request"}
+    }), 400
+
 
 @app.errorhandler(404)
 def not_found(error):
-    return jsonify({"error": "Not Found", "message": error.description}), 404
+    return jsonify({
+        "message": error.description if hasattr(error, "description") else "Resource not found"
+    }), 404
+
 
 @app.errorhandler(500)
 def internal_error(error):
-    return jsonify({"error": "Internal Server Error"}), 500
+    return jsonify({"message": "Internal Server Error"}), 500
 
 
 # ------------------- MAIN -------------------
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=8080)
