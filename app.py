@@ -4,10 +4,12 @@ import os
 
 app = Flask(__name__)
 
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-db_path = os.path.join(BASE_DIR, "employees.db")
+# BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+# Путь к базе внутри контейнера (volume)
+db_path = "/data/employees.db"
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
 
@@ -187,4 +189,4 @@ def internal_error(error):
 # ------------------- MAIN -------------------
 
 if __name__ == "__main__":
-    app.run(debug=True, port=8080)
+    app.run(host="0.0.0.0", port=8080, debug=True)
