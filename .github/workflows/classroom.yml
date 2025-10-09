@@ -1,13 +1,19 @@
 name: GitHub Classroom Workflow
 on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+  workflow_run: 
+    workflows: ["build"]
+    types:
+      - completed
+      
+  # push:
+  #   branches:
+  #     - master
+  # pull_request:
+  #   branches:
+  #     - master
 jobs:
   build:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     name: Autograding
     runs-on: ubuntu-latest
     steps:

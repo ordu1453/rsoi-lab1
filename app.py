@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 # Путь к базе внутри контейнера (volume)
 db_path = "/data/employees.db"
-app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///test.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
