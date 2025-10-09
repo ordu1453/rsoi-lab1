@@ -39,8 +39,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     python -m pip install -r requirements.txt
 
 RUN mkdir -p /app/app && chown -R 1000:1000 /app/app
-# Switch to the non-privileged user to run the application.
-USER appuser
+RUN mkdir -p /data && chown -R www-data:www-data /data
+USER www-data
 
 # Copy the source code into the container.
 COPY . .

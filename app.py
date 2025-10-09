@@ -8,7 +8,8 @@ app = Flask(__name__)
 
 # Путь к базе внутри контейнера (volume)
 db_path = "/data/employees.db"
-app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///test.db"
+# absolute path requires four slashes
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
@@ -17,7 +18,6 @@ with app.app_context():
     db.create_all()
 
 # ------------------- ВЕБ-ИНТЕРФЕЙС -------------------
-
 @app.route("/")
 def index():
     employees = Employee.query.all()
