@@ -4,20 +4,19 @@ import os
 
 app = Flask(__name__)
 
-# BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+db_path = os.path.join(BASE_DIR, 'database.db')
 
-# Путь к базе внутри контейнера (volume)
-db_path = "/data/employees.db"
-app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/database.db'
 
 db.init_app(app)
 
 with app.app_context():
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
     db.create_all()
 
-# ------------------- ВЕБ-ИНТЕРФЕЙС -------------------
 
+# ------------------- ВЕБ-ИНТЕРФЕЙС -------------------
 @app.route("/")
 def index():
     employees = Employee.query.all()
@@ -189,4 +188,5 @@ def internal_error(error):
 # ------------------- MAIN -------------------
 
 if __name__ == "__main__":
+
     app.run(host="0.0.0.0", port=8080, debug=True)
