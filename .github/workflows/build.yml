@@ -37,13 +37,21 @@ jobs:
       - name: Build Docker image
         run: docker build -t rsoi-lab1:latest .
 
-      # Деплой на Render
-      - name: Deploy to Render
-        uses: JorgeLNJunior/render-deploy@v1.4.5
-        with: |
-          service_id: ${{ secrets.RENDER_SERVICE_ID }}
-          api_key: ${{ secrets.DEPLOY_TO_RENDER_API }}
-          wait_deploy: true
+
+
+      - name: Deploy to production
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.MY_RENDER_SERVICE_ID }}
+          api-key: ${{ secrets.MY_RENDER_API_KEY }}
+          
+      # # Деплой на Render
+      # - name: Deploy to Render
+      #   uses: JorgeLNJunior/render-deploy@v1.4.5
+      #   with: |
+      #     service_id: ${{ secrets.RENDER_SERVICE_ID }}
+      #     api_key: ${{ secrets.DEPLOY_TO_RENDER_API }}
+      #     wait_deploy: true
 
       # # Деплой на Render через API
       # - name: Deploy to Render
